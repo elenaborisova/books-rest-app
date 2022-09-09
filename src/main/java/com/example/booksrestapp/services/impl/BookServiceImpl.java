@@ -2,7 +2,9 @@ package com.example.booksrestapp.services.impl;
 
 import com.example.booksrestapp.models.dtos.AuthorDto;
 import com.example.booksrestapp.models.dtos.BookDto;
+import com.example.booksrestapp.models.entities.AuthorEntity;
 import com.example.booksrestapp.models.entities.BookEntity;
+import com.example.booksrestapp.repositories.AuthorRepository;
 import com.example.booksrestapp.repositories.BookRepository;
 import com.example.booksrestapp.services.BookService;
 import org.modelmapper.ModelMapper;
@@ -16,10 +18,12 @@ import java.util.stream.Collectors;
 public class BookServiceImpl implements BookService {
 
     private final BookRepository bookRepository;
+    private final AuthorRepository authorRepository;
     private final ModelMapper modelMapper;
 
-    public BookServiceImpl(BookRepository bookRepository, ModelMapper modelMapper) {
+    public BookServiceImpl(BookRepository bookRepository, AuthorRepository authorRepository, ModelMapper modelMapper) {
         this.bookRepository = bookRepository;
+        this.authorRepository = authorRepository;
         this.modelMapper = modelMapper;
     }
 
@@ -36,6 +40,25 @@ public class BookServiceImpl implements BookService {
         return bookRepository
                 .findById(id)
                 .map(this::asBookDto);
+    }
+
+    @Override
+    public void deleteBook(Long id) {
+        bookRepository.deleteById(id);
+    }
+
+    @Override
+    public Long createBook(BookDto bookDto) {
+        AuthorEntity author = authorRepository
+                .findByName(bookDto.getAuthor().getName())
+                .orElseGet(() -> new AuthorEntity().setName(bookDto.getAuthor().getName()));
+
+        BookEntity book = new BookEntity()
+                .setAuthor(author)
+                .setIsbn(bookDto.getIsbn())
+                .setTitle(bookDto.getTitle());
+
+        return bookRepository.save(book).getId();
     }
 
     private BookDto asBookDto(BookEntity book) {
